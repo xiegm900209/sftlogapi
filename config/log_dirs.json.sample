@@ -1,0 +1,7 @@
+{
+  "sft-aipg": "/root/sft/testlogs/sft-aipg",
+  "sft-trxqry": "/root/sft/testlogs/sft-trxqry",
+  "sft-pay": "/root/sft/testlogs/sft-pay",
+  "sft-batchpay": "/root/sft/testlogs/sft-batchpay",
+  "sft-contract": "/root/sft/testlogs/sft-contract"
+}

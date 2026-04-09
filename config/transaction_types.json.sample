@@ -1,0 +1,18 @@
+{
+  "310011": {
+    "name": "协议支付",
+    "apps": ["sft-aipg", "sft-trxqry", "sft-pay"]
+  },
+  "310016": {
+    "name": "批量协议支付",
+    "apps": ["sft-aipg", "sft-trxqry", "sft-batchpay"]
+  },
+  "310002": {
+    "name": "协议支付签约",
+    "apps": ["sft-aipg", "sft-contract"]
+  },
+  "200004": {
+    "name": "交易查询",
+    "apps": ["sft-aipg", "sft-trxqry"]
+  }
+}

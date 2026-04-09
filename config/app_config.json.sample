@@ -1,0 +1,9 @@
+{
+  "app_name": "Log Tracker",
+  "version": "2.3.0",
+  "debug": true,
+  "log_level": "INFO",
+  "max_file_size": 104857600,
+  "index_update_interval": 300,
+  "max_search_results": 1000
+}
