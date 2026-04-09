@@ -41,10 +41,10 @@
           ></el-input>
         </el-form-item>
 
-        <el-form-item label="日志时间">
+        <el-form-item label="日志时间" required>
           <el-input 
             v-model="queryForm.logTime" 
-            placeholder="格式：2026040809 (年月日时)"
+            placeholder="格式：2026040809 (年月日时) *必填"
             clearable
             style="width: 180px"
             maxlength="10"
@@ -331,23 +331,27 @@ export default {
         return
       }
 
+      // 强制要求输入日志时间
+      if (!this.queryForm.logTime) {
+        this.$message.error('请输入日志时间（必填），格式：2026040809')
+        return
+      }
+
+      // 验证时间格式：YYYYMMDDHH (10 位数字)
+      const timePattern = /^\d{10}$/
+      if (!timePattern.test(this.queryForm.logTime)) {
+        this.$message.error('日志时间格式不正确，应为 10 位数字（如：2026040809）')
+        return
+      }
+
       this.loading = true
       this.searched = true
 
       try {
         const params = {
           transaction_type: this.queryForm.transactionType,
-          req_sn: this.queryForm.reqSn
-        }
-        
-        if (this.queryForm.logTime) {
-          const timePattern = /^\d{10}$/
-          if (!timePattern.test(this.queryForm.logTime)) {
-            this.$message.error('日志时间格式不正确，应为 10 位数字（如：2026040809）')
-            this.loading = false
-            return
-          }
-          params.log_time = this.queryForm.logTime
+          req_sn: this.queryForm.reqSn,
+          log_time: this.queryForm.logTime
         }
 
         const response = await axios.get('/api/transaction-trace', { params })

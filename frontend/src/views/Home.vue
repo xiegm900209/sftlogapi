@@ -198,7 +198,7 @@
         class="info-alert"
       >
         <div class="info-content">
-          <p><strong>📝 日志时间格式</strong>：输入 10 位数字，格式为 <code>YYYYMMDDHH</code>（如：2026040809 表示 2026 年 4 月 8 日 9 时）</p>
+          <p><strong>📝 日志时间格式</strong>：输入 10 位数字，格式为 <code>YYYYMMDDHH</code>（如：2026040809 表示 2026 年 4 月 8 日 9 时）<strong>（必填，防止系统过载）</strong></p>
           <p><strong>🔖 TraceID 提取</strong>：系统从日志格式的第 3 个参数提取 TraceID，格式为 <code>[时间][线程][TraceID][级别]...</code></p>
           <p><strong>🔄 重复查询识别</strong>：同一个 REQ_SN 可能对应多个 TraceID（重复查询场景），系统会自动分组展示</p>
           <p><strong>📄 多行日志支持</strong>：以时间戳开头作为新日志的开始，中间所有内容都属于同一行日志</p>

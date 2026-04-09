@@ -250,6 +250,8 @@ def create_app():
         2. 从第一个应用（入口应用）根据 REQ_SN 和时间找到所有不同的 TraceID
         3. 对每个 TraceID，依次查询所有关联应用的日志
         4. 按 TraceID 分组返回结果
+        
+        注意：log_time 参数为必填，防止查询全量日志导致系统崩溃
         """
         transaction_type = request.args.get('transaction_type')
         req_sn = request.args.get('req_sn')
@@ -266,6 +268,21 @@ def create_app():
                 return jsonify({
                     'success': False,
                     'message': '请输入 REQ_SN'
+                }), 400
+
+            # 强制要求输入日志时间，防止查询全量日志
+            if not log_time:
+                return jsonify({
+                    'success': False,
+                    'message': '请输入日志时间（必填），格式：YYYYMMDDHH（如：2026040809）'
+                }), 400
+
+            # 验证时间格式
+            import re
+            if not re.match(r'^\d{10}$', log_time):
+                return jsonify({
+                    'success': False,
+                    'message': '日志时间格式不正确，应为 10 位数字（如：2026040809）'
                 }), 400
 
             # 1. 获取交易类型配置中的应用列表
@@ -388,6 +405,8 @@ def create_app():
         2. 找到所有包含 REQ_SN 的行，提取所有不同的 TraceID
         3. 对每个 TraceID 查询所有相关日志
         4. 分组展示每个 TraceID 的完整链路
+        
+        注意：log_time 参数为必填，防止查询全量日志导致系统崩溃
         """
         req_sn = request.args.get('req_sn')
         merchant_no = request.args.get('merchant_no')
@@ -399,6 +418,21 @@ def create_app():
                 return jsonify({
                     'success': False,
                     'message': '请输入 REQ_SN 或商户号'
+                }), 400
+
+            # 强制要求输入日志时间，防止查询全量日志
+            if not log_time:
+                return jsonify({
+                    'success': False,
+                    'message': '请输入日志时间（必填），格式：YYYYMMDDHH（如：2026040809）'
+                }), 400
+
+            # 验证时间格式
+            import re
+            if not re.match(r'^\d{10}$', log_time):
+                return jsonify({
+                    'success': False,
+                    'message': '日志时间格式不正确，应为 10 位数字（如：2026040809）'
                 }), 400
 
             # 第一步：找到所有包含 REQ_SN 的日志行，提取所有不同的 TraceID
