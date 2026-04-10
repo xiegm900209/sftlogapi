@@ -1,0 +1,62 @@
+# 交易日志链路追踪系统 - Docker Compose 配置
+# 版本：v2.3.5
+
+version: '3.8'
+
+services:
+  log-tracker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: log-tracker:v2.3.5
+    container_name: log-tracker
+    restart: unless-stopped
+    
+    # 端口映射
+    ports:
+      - "8080:80"
+    
+    # 环境变量
+    environment:
+      - TZ=Asia/Shanghai
+    
+    # 挂载日志目录（可选，用于访问外部日志文件）
+    volumes:
+      # 挂载日志目录 - 修改为你的实际日志路径
+      - /root/sft/testlogs:/app/logs:ro
+      # 挂载配置文件（可选，用于自定义配置）
+      - ./config:/app/config
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/services"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # 网络配置
+    networks:
+      - log-tracker-network
+
+# 网络配置
+networks:
+  log-tracker-network:
+    driver: bridge
