@@ -413,6 +413,7 @@ def create_app():
     def log_query():
         """
         综合日志查询 - 支持 REQ_SN、商户号、日志时间组合查询
+        支持分页和结果限制
         
         查询逻辑:
         1. 根据日志时间定位日志文件
@@ -420,12 +421,24 @@ def create_app():
         3. 对每个 TraceID 查询所有相关日志
         4. 分组展示每个 TraceID 的完整链路
         
-        注意：log_time 参数为必填，防止查询全量日志导致系统崩溃
+        参数:
+        - req_sn: 交易序列号
+        - merchant_no: 商户号
+        - log_time: 日志时间（必填，YYYYMMDDHH）
+        - service: 服务名称
+        - page: 页码（默认 1）
+        - page_size: 每页数量（默认 100，最大 500）
+        - max_logs: 最大返回日志数（默认 1000）
         """
         req_sn = request.args.get('req_sn')
         merchant_no = request.args.get('merchant_no')
         log_time = request.args.get('log_time')
         service = request.args.get('service')
+        
+        # 分页参数
+        page = int(request.args.get('page', 1))
+        page_size = min(int(request.args.get('page_size', 100)), 500)
+        max_logs = min(int(request.args.get('max_logs', 1000)), 5000)
 
         try:
             if not req_sn and not merchant_no:
@@ -500,9 +513,84 @@ def create_app():
                     'message': '未找到包含 REQ_SN 的日志记录'
                 })
 
-            # 第二步：对每个 TraceID 查询所有相关日志
+            # 第二步：对每个 TraceID 查询所有相关日志（限制最大数量）
             svc = service or 'sft-aipg'
             all_logs = []
+            total_found = 0  # 总共找到的日志数（用于分页）
+            
+            for trace_group in trace_ids:
+                trace_id = trace_group['trace_id']
+                
+                # 查询该 TraceID 的所有日志
+                trace_logs = []
+                for app in [svc]:  # 只查询指定服务
+                    app_logs = find_logs_by_trace_id(app, trace_id, '/app/logs')
+                    trace_logs.extend(app_logs)
+                
+                # 限制每个 TraceID 的日志数量
+                if len(trace_logs) > max_logs // max(len(trace_ids), 1):
+                    trace_logs = trace_logs[:max_logs // max(len(trace_ids), 1)]
+                
+                total_found += len(trace_logs)
+                
+                # 添加 TraceID 信息
+                for log in trace_logs:
+                    log.trace_group = trace_group['trace_id']
+                
+                all_logs.extend(trace_logs)
+                
+                # 如果已经达到最大限制，停止查询
+                if len(all_logs) >= max_logs:
+                    all_logs = all_logs[:max_logs]
+                    break
+            
+            # 按时间排序
+            all_logs.sort(key=lambda x: x.timestamp if hasattr(x, 'timestamp') else x.get('timestamp', ''))
+            
+            # 分页
+            total_count = len(all_logs)
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_logs = all_logs[start_idx:end_idx]
+            
+            # 格式化结果
+            result = []
+            for log in paginated_logs:
+                result.append({
+                    'timestamp': log.timestamp if hasattr(log, 'timestamp') else log.get('timestamp', ''),
+                    'thread': log.thread if hasattr(log, 'thread') else log.get('thread', ''),
+                    'trace_id': log.trace_id if hasattr(log, 'trace_id') else log.get('trace_id', ''),
+                    'level': log.level if hasattr(log, 'level') else log.get('level', ''),
+                    'env': log.env if hasattr(log, 'env') else log.get('env', ''),
+                    'company': log.company if hasattr(log, 'company') else log.get('company', ''),
+                    'service': log.service if hasattr(log, 'service') else log.get('service', ''),
+                    'content': log.content if hasattr(log, 'content') else log.get('content', ''),
+                    'parsed_content': log.parsed_content if hasattr(log, 'parsed_content') else log.get('parsed_content', {})
+                })
+            
+            # 构建 TraceID 分组
+            trace_groups = []
+            for trace_group in trace_ids:
+                trace_groups.append({
+                    'trace_id': trace_group['trace_id'],
+                    'log_count': len([l for l in all_logs if (hasattr(l, 'trace_id') and l.trace_id == trace_group['trace_id']) or (isinstance(l, dict) and l.get('trace_id') == trace_group['trace_id'])])
+                })
+            
+            return jsonify({
+                'success': True,
+                'logs': result,
+                'trace_groups': trace_groups,
+                'pagination': {
+                    'page': page,
+                    'page_size': page_size,
+                    'total_count': total_count,
+                    'total_pages': (total_count + page_size - 1) // page_size,
+                    'has_next': end_idx < total_count,
+                    'has_prev': page > 1
+                },
+                'total': len(result),
+                'trace_count': len(trace_groups)
+            })
             trace_groups = []
             
             for trace_info in trace_ids:

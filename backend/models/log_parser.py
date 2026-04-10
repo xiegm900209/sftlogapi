@@ -238,9 +238,15 @@ def find_logs_by_req_sn(service_name: str, req_sn: str, log_dir: str = '/app/log
     return result
 
 
-def find_logs_by_trace_id(service_name: str, trace_id: str, log_dir: str = '/app/logs') -> List[LogBlock]:
+def find_logs_by_trace_id(service_name: str, trace_id: str, log_dir: str = '/app/logs', max_logs: int = 500) -> List[LogBlock]:
     """
-    根据 TraceID 在指定服务的日志中查找对应的日志块
+    根据 TraceID 在指定服务的日志中查找对应的日志块（带数量限制）
+    
+    Args:
+        service_name: 服务名称
+        trace_id: TraceID
+        log_dir: 日志目录
+        max_logs: 最大返回日志数（默认 500）
     """
     import os
 
@@ -249,11 +255,15 @@ def find_logs_by_trace_id(service_name: str, trace_id: str, log_dir: str = '/app
         return []
 
     result = []
-    for filename in os.listdir(service_dir):
+    # 按文件名排序，保证查询顺序一致
+    for filename in sorted(os.listdir(service_dir)):
         if filename.endswith('.log') or filename.endswith('.log.gz'):
             file_path = os.path.join(service_dir, filename)
-            for log_block in read_log_blocks(file_path):
+            # 使用 max_blocks 参数限制读取数量
+            for log_block in read_log_blocks(file_path, max_blocks=max(100, (max_logs - len(result)) * 2)):
                 if log_block.trace_id == trace_id:
                     result.append(log_block)
+                    if len(result) >= max_logs:
+                        return result  # 达到限制，提前返回
 
     return result

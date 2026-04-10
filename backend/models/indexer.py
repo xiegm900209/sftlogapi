@@ -1,213 +1,172 @@
-import json
+"""
+日志索引模块
+为 TraceID 和 REQ_SN 建立索引，加速查询
+"""
+
 import os
-import re
+import json
+import hashlib
 from datetime import datetime
-from typing import Dict, List, Tuple
-from models.log_parser import read_log_blocks
+from typing import Dict, List, Optional, Set
 
 
 class IndexBuilder:
-    """日志索引构建器"""
-
+    """索引构建器"""
+    
     def __init__(self, log_dir: str = '/app/logs', index_dir: str = '/app/logs_index'):
         self.log_dir = log_dir
         self.index_dir = index_dir
-        os.makedirs(index_dir, exist_ok=True)
-
-    def build_service_index(self, service_name: str) -> Dict[str, List[Dict]]:
+        self.trace_id_index: Dict[str, Set[str]] = {}  # TraceID -> {文件路径}
+        self.req_sn_index: Dict[str, Set[str]] = {}    # REQ_SN -> {文件路径}
+        
+    def build_index(self, services: List[str] = None):
         """
-        为指定服务的所有日志文件构建索引
-        返回格式: {
-            'TRACE_ID': [
-                {'file_path': '...', 'position': int, 'timestamp': '...'},
-                ...
-            ]
-        }
+        构建索引
+        
+        Args:
+            services: 服务列表，不指定则扫描所有服务
         """
-        import hashlib
-
-        service_dir = os.path.join(self.log_dir, service_name)
+        if not services:
+            services = self._scan_services()
+        
+        for service in services:
+            self._index_service(service)
+    
+    def _scan_services(self) -> List[str]:
+        """扫描所有服务目录"""
+        services = []
+        if os.path.exists(self.log_dir):
+            for item in os.listdir(self.log_dir):
+                item_path = os.path.join(self.log_dir, item)
+                if os.path.isdir(item_path):
+                    services.append(item)
+        return services
+    
+    def _index_service(self, service: str):
+        """为单个服务构建索引"""
+        service_dir = os.path.join(self.log_dir, service)
         if not os.path.exists(service_dir):
-            return {}
-
-        trace_index = {}
-
+            return
+        
         for filename in os.listdir(service_dir):
-            if filename.endswith('.log'):
+            if filename.endswith('.log') or filename.endswith('.log.gz'):
                 file_path = os.path.join(service_dir, filename)
-
-                # 计算文件哈希，用于检测文件是否变更
-                file_hash = self._get_file_hash(file_path)
-                index_file_path = os.path.join(self.index_dir, f"{service_name}_{filename}.index.json")
-
-                # 检查索引文件是否存在且文件未更改
-                if os.path.exists(index_file_path):
-                    try:
-                        with open(index_file_path, 'r', encoding='utf-8') as f:
-                            index_data = json.load(f)
-
-                        # 检查文件哈希是否一致
-                        if index_data.get('file_hash') == file_hash:
-                            # 文件未变化，直接使用现有索引
-                            existing_index = index_data.get('trace_index', {})
-
-                            # 合并到总索引中
-                            for trace_id, entries in existing_index.items():
-                                if trace_id not in trace_index:
-                                    trace_index[trace_id] = []
-                                trace_index[trace_id].extend(entries)
-
-                            continue
-                    except:
-                        # 如果索引文件损坏，则重新构建
-                        pass
-
-                # 构建当前文件的索引
-                file_trace_index = self._build_single_file_index(file_path)
-
-                # 更新总索引
-                for trace_id, entries in file_trace_index.items():
-                    if trace_id not in trace_index:
-                        trace_index[trace_id] = []
-                    trace_index[trace_id].extend(entries)
-
-                # 保存此文件的索引
-                index_data = {
-                    'file_hash': file_hash,
-                    'timestamp': datetime.now().isoformat(),
-                    'trace_index': file_trace_index
-                }
-
-                with open(index_file_path, 'w', encoding='utf-8') as f:
-                    json.dump(index_data, f, ensure_ascii=False, indent=2)
-
-        return trace_index
-
-    def _build_single_file_index(self, file_path: str) -> Dict[str, List[Dict]]:
+                self._index_file(file_path)
+    
+    def _index_file(self, file_path: str):
         """为单个日志文件构建索引"""
-        trace_positions = {}
-        position = 0
-
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            lines = f.readlines()
-
-        for line_num, line in enumerate(lines):
-            # 查找TraceID模式: TC[A-Z0-9]+
-            matches = re.findall(r'\[(TC[A-Z0-9]+)\]', line)
-            for trace_id in matches:
-                if trace_id not in trace_positions:
-                    trace_positions[trace_id] = []
-
-                trace_positions[trace_id].append({
-                    'file_path': file_path,
-                    'line_num': line_num,
-                    'position': position,
-                    'timestamp': self._extract_timestamp(line)
-                })
-
-            position += len(line.encode('utf-8'))
-
-        return trace_positions
-
-    def _get_file_hash(self, file_path: str) -> str:
-        """计算文件的MD5哈希值"""
-        import hashlib
-
-        hash_md5 = hashlib.md5()
-        with open(file_path, "rb") as f:
-            # 分块读取大文件
-            for chunk in iter(lambda: f.read(4096), b""):
-                hash_md5.update(chunk)
-        return hash_md5.hexdigest()
-
-    def _extract_timestamp(self, line: str) -> str:
-        """从日志行中提取时间戳"""
-        match = re.match(r'^\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3})\]', line)
-        return match.group(1) if match else ''
-
-    def build_full_system_index(self) -> Dict[str, Dict[str, List[Dict]]]:
-        """为整个系统的日志构建索引"""
-        all_services_index = {}
-
-        for service_name in os.listdir(self.log_dir):
-            service_path = os.path.join(self.log_dir, service_name)
-            if os.path.isdir(service_path):
-                print(f"正在为服务 {service_name} 构建索引...")
-                service_index = self.build_service_index(service_name)
-                all_services_index[service_name] = service_index
-
-        return all_services_index
-
-    def search_by_trace_id(self, trace_id: str) -> List[Dict]:
-        """根据TraceID搜索所有相关的日志块"""
-        # 扫描所有服务的索引文件
-        results = []
-
-        for service_name in os.listdir(self.log_dir):
-            service_path = os.path.join(self.log_dir, service_name)
-            if os.path.isdir(service_path):
-                # 查找对应的服务索引文件
-                for filename in os.listdir(service_path):
-                    if filename.endswith('.log'):
-                        index_file_path = os.path.join(self.index_dir, f"{service_name}_{filename}.index.json")
-
-                        if os.path.exists(index_file_path):
-                            try:
-                                with open(index_file_path, 'r', encoding='utf-8') as f:
-                                    index_data = json.load(f)
-
-                                trace_entries = index_data.get('trace_index', {}).get(trace_id, [])
-                                for entry in trace_entries:
-                                    # 读取实际的日志内容
-                                    with open(entry['file_path'], 'r', encoding='utf-8', errors='ignore') as f:
-                                        lines = f.readlines()
-                                        if entry['line_num'] < len(lines):
-                                            content = lines[entry['line_num']].strip()
-                                            results.append({
-                                                'service': service_name,
-                                                'file': filename,
-                                                'line_num': entry['line_num'],
-                                                'content': content,
-                                                'timestamp': entry['timestamp'],
-                                                'trace_id': trace_id
-                                            })
-                            except:
-                                continue  # 忽略损坏的索引文件
-
-        # 按时间戳排序
-        results.sort(key=lambda x: x['timestamp'])
-        return results
-
-    def update_index_if_needed(self, service_name: str) -> bool:
-        """检查服务日志是否有更新，如有则更新索引"""
-        service_dir = os.path.join(self.log_dir, service_name)
-        if not os.path.exists(service_dir):
+        from models.log_parser import read_log_blocks
+        
+        try:
+            for log_block in read_log_blocks(file_path):
+                # 索引 TraceID
+                if log_block.trace_id:
+                    if log_block.trace_id not in self.trace_id_index:
+                        self.trace_id_index[log_block.trace_id] = set()
+                    self.trace_id_index[log_block.trace_id].add(file_path)
+                
+                # 索引 REQ_SN
+                if isinstance(log_block.parsed_content, dict):
+                    req_sn = log_block.parsed_content.get('req_sn')
+                    if req_sn:
+                        if req_sn not in self.req_sn_index:
+                            self.req_sn_index[req_sn] = set()
+                        self.req_sn_index[req_sn].add(file_path)
+        except Exception as e:
+            print(f"索引文件失败 {file_path}: {e}")
+    
+    def save_index(self, index_file: str = None):
+        """保存索引到文件"""
+        if not index_file:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            index_file = os.path.join(self.index_dir, f'index_{timestamp}.json')
+        
+        os.makedirs(os.path.dirname(index_file), exist_ok=True)
+        
+        # 转换 set 为 list（JSON 不支持 set）
+        index_data = {
+            'trace_id_index': {k: list(v) for k, v in self.trace_id_index.items()},
+            'req_sn_index': {k: list(v) for k, v in self.req_sn_index.items()},
+            'created_at': datetime.now().isoformat()
+        }
+        
+        with open(index_file, 'w', encoding='utf-8') as f:
+            json.dump(index_data, f, ensure_ascii=False, indent=2)
+        
+        print(f"索引已保存到：{index_file}")
+        return index_file
+    
+    def load_index(self, index_file: str = None):
+        """从文件加载索引"""
+        if not index_file:
+            index_file = self._find_latest_index()
+        
+        if not index_file or not os.path.exists(index_file):
+            print("未找到索引文件")
             return False
+        
+        try:
+            with open(index_file, 'r', encoding='utf-8') as f:
+                index_data = json.load(f)
+            
+            # 转换 list 回 set
+            self.trace_id_index = {k: set(v) for k, v in index_data.get('trace_id_index', {}).items()}
+            self.req_sn_index = {k: set(v) for k, v in index_data.get('req_sn_index', {}).items()}
+            
+            print(f"索引已加载：{index_file}")
+            print(f"  TraceID 索引：{len(self.trace_id_index)} 条")
+            print(f"  REQ_SN 索引：{len(self.req_sn_index)} 条")
+            return True
+        except Exception as e:
+            print(f"加载索引失败：{e}")
+            return False
+    
+    def _find_latest_index(self) -> Optional[str]:
+        """查找最新的索引文件"""
+        if not os.path.exists(self.index_dir):
+            return None
+        
+        index_files = [f for f in os.listdir(self.index_dir) if f.startswith('index_') and f.endswith('.json')]
+        if not index_files:
+            return None
+        
+        index_files.sort(reverse=True)
+        return os.path.join(self.index_dir, index_files[0])
+    
+    def find_files_by_trace_id(self, trace_id: str) -> List[str]:
+        """通过 TraceID 查找文件"""
+        return list(self.trace_id_index.get(trace_id, set()))
+    
+    def find_files_by_req_sn(self, req_sn: str) -> List[str]:
+        """通过 REQ_SN 查找文件"""
+        return list(self.req_sn_index.get(req_sn, set()))
 
-        updated = False
-        for filename in os.listdir(service_dir):
-            if filename.endswith('.log'):
-                file_path = os.path.join(service_dir, filename)
-                index_file_path = os.path.join(self.index_dir, f"{service_name}_{filename}.index.json")
 
-                # 检查文件是否比索引文件新
-                if (not os.path.exists(index_file_path) or
-                    os.path.getmtime(file_path) > os.path.getmtime(index_file_path)):
-                    # 需要更新索引
-                    print(f"更新 {service_name}/{filename} 的索引...")
-                    file_trace_index = self._build_single_file_index(file_path)
+class IndexManager:
+    """索引管理器（单例模式）"""
+    
+    _instance = None
+    _indexer = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def get_indexer(self, auto_load: bool = True) -> IndexBuilder:
+        """获取索引构建器"""
+        if self._indexer is None:
+            self._indexer = IndexBuilder()
+            if auto_load:
+                self._indexer.load_index()
+        return self._indexer
+    
+    def rebuild_index(self, services: List[str] = None):
+        """重建索引"""
+        indexer = self.get_indexer(auto_load=False)
+        indexer.build_index(services)
+        indexer.save_index()
 
-                    # 保存索引
-                    file_hash = self._get_file_hash(file_path)
-                    index_data = {
-                        'file_hash': file_hash,
-                        'timestamp': datetime.now().isoformat(),
-                        'trace_index': file_trace_index
-                    }
 
-                    with open(index_file_path, 'w', encoding='utf-8') as f:
-                        json.dump(index_data, f, ensure_ascii=False, indent=2)
-
-                    updated = True
-
-        return updated
+# 全局索引管理器
+index_manager = IndexManager()
