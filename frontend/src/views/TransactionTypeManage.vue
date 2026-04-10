@@ -6,10 +6,16 @@
       <template #header>
         <div class="card-header">
           <span>交易类型列表</span>
-          <el-button type="primary" @click="openAddDialog">
-            <el-icon><Plus /></el-icon>
-            新增交易类型
-          </el-button>
+          <div class="header-actions">
+            <el-button @click="exportTransactionTypes">
+              <el-icon><Download /></el-icon>
+              导出全部
+            </el-button>
+            <el-button type="primary" @click="openAddDialog">
+              <el-icon><Plus /></el-icon>
+              新增交易类型
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -38,9 +44,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row, $index }">
             <el-button size="small" @click="openEditDialog(row, $index)">编辑</el-button>
+            <el-button size="small" type="success" @click="cloneTransactionType(row, $index)">复制</el-button>
             <el-popconfirm 
               title="确认删除该交易类型吗？" 
               @confirm="deleteTransactionType($index)"
@@ -109,13 +116,15 @@
 </template>
 
 <script>
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Download, CopyDocument } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 export default {
   name: 'TransactionTypeManage',
   components: {
-    Plus
+    Plus,
+    Download,
+    CopyDocument
   },
   data() {
     return {
@@ -281,6 +290,62 @@ export default {
         console.error('删除失败:', error)
         this.$message.error('删除失败：' + error.message)
       }
+    },
+
+    /**
+     * 复制交易类型 - 基于现有配置创建新条目
+     */
+    cloneTransactionType(row, index) {
+      this.isEdit = false
+      this.editIndex = -1
+      // 复制数据，交易代码添加 _copy 后缀
+      this.formData = {
+        code: row.code + '_copy',
+        name: row.name + ' (副本)',
+        apps: [...row.apps]
+      }
+      this.dialogVisible = true
+      this.$message.success('已复制交易类型，请修改交易代码和名称')
+    },
+
+    /**
+     * 导出交易类型列表为 JSON 文件
+     */
+    async exportTransactionTypes() {
+      if (this.transactionTypesList.length === 0) {
+        this.$message.warning('没有可导出的数据')
+        return
+      }
+
+      try {
+        // 构建导出数据结构
+        const exportData = {
+          export_time: new Date().toISOString(),
+          total: this.transactionTypesList.length,
+          transaction_types: {}
+        }
+
+        this.transactionTypesList.forEach(item => {
+          exportData.transaction_types[item.code] = {
+            name: item.name,
+            apps: item.apps
+          }
+        })
+
+        // 创建 JSON 文件并下载
+        const jsonStr = JSON.stringify(exportData, null, 2)
+        const blob = new Blob(['\ufeff' + jsonStr], { type: 'application/json;charset=utf-8' })
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+        link.download = `transaction-types-${timestamp}.json`
+        link.click()
+        
+        this.$message.success(`已导出 ${this.transactionTypesList.length} 条交易类型配置`)
+      } catch (error) {
+        console.error('导出失败:', error)
+        this.$message.error('导出失败：' + error.message)
+      }
     }
   }
 }
@@ -298,6 +363,12 @@ export default {
 .card-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
   align-items: center;
 }
 
