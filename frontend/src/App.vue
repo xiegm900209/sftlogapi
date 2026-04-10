@@ -20,7 +20,6 @@
               <template #title>配置管理</template>
               <el-menu-item index="/transaction-types">交易类型管理</el-menu-item>
               <el-menu-item index="/app-log-config">应用日志配置</el-menu-item>
-              <el-menu-item index="/config">系统配置</el-menu-item>
             </el-sub-menu>
           </el-menu>
         </div>

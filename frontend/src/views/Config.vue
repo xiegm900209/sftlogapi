@@ -3,54 +3,6 @@
     <el-page-header @back="$router.go(-1)" content="系统配置"></el-page-header>
 
     <el-tabs v-model="activeTab" class="config-tabs">
-      <el-tab-pane label="应用配置" name="app">
-        <el-card>
-          <template #header>
-            <span>应用配置</span>
-          </template>
-
-          <el-form :model="appConfig" label-width="150px" style="max-width: 600px;">
-            <el-form-item label="应用名称">
-              <el-input v-model="appConfig.app_name"></el-input>
-            </el-form-item>
-
-            <el-form-item label="版本号">
-              <el-input v-model="appConfig.version"></el-input>
-            </el-form-item>
-
-            <el-form-item label="调试模式">
-              <el-switch v-model="appConfig.debug"></el-switch>
-            </el-form-item>
-
-            <el-form-item label="日志级别">
-              <el-select v-model="appConfig.log_level">
-                <el-option label="DEBUG" value="DEBUG"></el-option>
-                <el-option label="INFO" value="INFO"></el-option>
-                <el-option label="WARN" value="WARN"></el-option>
-                <el-option label="ERROR" value="ERROR"></el-option>
-              </el-select>
-            </el-form-item>
-
-            <el-form-item label="最大文件大小(MB)">
-              <el-input-number v-model="appConfig.max_file_size" :min="1" :max="10240"></el-input-number>
-            </el-form-item>
-
-            <el-form-item label="索引更新间隔(秒)">
-              <el-input-number v-model="appConfig.index_update_interval" :min="60" :max="3600"></el-input-number>
-            </el-form-item>
-
-            <el-form-item label="最大搜索结果数">
-              <el-input-number v-model="appConfig.max_search_results" :min="10" :max="10000"></el-input-number>
-            </el-form-item>
-
-            <el-form-item>
-              <el-button type="primary" @click="saveAppConfig">保存配置</el-button>
-              <el-button @click="resetAppConfig">重置</el-button>
-            </el-form-item>
-          </el-form>
-        </el-card>
-      </el-tab-pane>
-
       <el-tab-pane label="交易类型配置" name="transaction">
         <el-card>
           <template #header>
@@ -145,8 +97,7 @@ export default {
   name: 'Config',
   data() {
     return {
-      activeTab: 'app',
-      appConfig: {},
+      activeTab: 'transaction',
       transactionTypes: {},
       transactionTypesList: [],
       logDirsConfig: {},
@@ -163,21 +114,9 @@ export default {
   },
   methods: {
     async loadConfigs() {
-      await this.loadAppConfig();
       await this.loadTransactionTypes();
       await this.loadLogDirsConfig();
       await this.loadAvailableServices();
-    },
-
-    async loadAppConfig() {
-      try {
-        const response = await axios.get('/config/get-app-config');
-        if (response.data.success) {
-          this.appConfig = response.data.config;
-        }
-      } catch (error) {
-        console.error('加载应用配置失败:', error);
-      }
     },
 
     async loadTransactionTypes() {
@@ -217,18 +156,6 @@ export default {
       }
     },
 
-    async saveAppConfig() {
-      try {
-        const response = await axios.post('/config/update-app-config', this.appConfig);
-        if (response.data.success) {
-          this.$message.success('应用配置已保存');
-        }
-      } catch (error) {
-        console.error('保存应用配置失败:', error);
-        this.$message.error('保存应用配置失败: ' + error.message);
-      }
-    },
-
     async saveLogDirsConfig() {
       try {
         // 先验证配置
@@ -249,10 +176,6 @@ export default {
         console.error('保存日志目录配置失败:', error);
         this.$message.error('保存日志目录配置失败: ' + error.message);
       }
-    },
-
-    resetAppConfig() {
-      this.loadAppConfig();
     },
 
     resetLogDirsConfig() {

@@ -1,128 +1,123 @@
-# Log Tracker 部署文档
+# sftlogapi 部署说明
 
-## 部署完成 ✅
+## 📦 部署信息
 
-**部署时间**: 2026-04-09  
-**访问地址**: http://172.16.2.164:8083
+| 项目 | 值 |
+|------|-----|
+| 项目名称 | sftlogapi |
+| 部署方式 | 本地部署（非容器化） |
+| 项目路径 | /root/sft/sftlogapi/ |
+| Flask 端口 | 5001 |
+| Tengine 端口 | 8090 |
 
-## 架构说明
+## 🌐 访问地址
 
-```
-┌─────────────────┐
-│   用户浏览器     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Nginx (8083)   │  ← 静态文件 + 反向代理
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-    ▼         ▼
-┌───────┐  ┌──────────┐
-│ Vue   │  │  Flask   │
-│ 前端  │  │  后端    │
-│(静态) │  │ (5000)   │
-└───────┘  └────┬─────┘
-               │
-               ▼
-        ┌──────────────┐
-        │  /root/sft/  │
-        │   testlogs   │
-        └──────────────┘
-```
+- **首页**: `http://172.16.2.164:8090/sftlogapi/`
+- **日志查询**: `http://172.16.2.164:8090/sftlogapi/log-query`
+- **交易追踪**: `http://172.16.2.164:8090/sftlogapi/transaction-trace`
+- **配置管理**: `http://172.16.2.164:8090/sftlogapi/config`
+- **API 接口**: `http://172.16.2.164:8090/sftlogapi/api/services`
 
-## 组件状态
+## 🔧 启动/停止命令
 
-| 组件 | 状态 | 端口 | 说明 |
-|------|------|------|------|
-| Nginx | ✅ 运行中 | 8083 | Tengine，静态文件 + 反向代理 |
-| Flask | ✅ 运行中 | 5000 | Python 后端 API |
-| Vue | ✅ 已构建 | - | Vite 构建，dist 目录 |
-
-## 目录结构
-
-```
-/root/sft/log-tracker/
-├── backend/              # Flask 后端
-│   ├── app_main.py      # 主应用入口
-│   ├── models/          # 数据模型
-│   └── routes/          # API 路由
-├── frontend/            # Vue 前端
-│   ├── dist/           # 构建输出 (已部署到 /var/www/log-tracker)
-│   ├── src/            # 源代码
-│   ├── index.html      # Vite 入口
-│   ├── vite.config.js  # Vite 配置
-│   └── package.json    # 依赖配置
-├── config/             # 配置文件
-│   ├── app_config.json
-│   ├── log_dirs.json
-│   └── transaction_types.json
-└── DEPLOYMENT.md       # 本文档
-```
-
-## API 端点
-
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/services` | GET | 获取可用服务列表 |
-| `/api/transaction-types` | GET | 获取交易类型配置 |
-| `/api/search` | GET | 按 REQ_SN 搜索日志 |
-| `/api/trace` | GET | 追踪交易链路 |
-| `/api/trace-summary` | GET | 获取交易链路摘要 |
-| `/api/search-by-trace` | GET | 按 TraceID 搜索 |
-
-## 使用示例
-
+### 一键启动
 ```bash
-# 获取服务列表
-curl http://172.16.2.164:8083/api/services
-
-# 获取交易类型
-curl http://172.16.2.164:8083/api/transaction-types
-
-# 搜索 REQ_SN
-curl "http://172.16.2.164:8083/api/search?req_sn=12345&service=sft-aipg"
-
-# 按 TraceID 搜索
-curl "http://172.16.2.164:8083/api/search-by-trace?trace_id=abc123"
+cd /root/sft/sftlogapi
+./start.sh
 ```
 
-## 维护命令
-
-### 重启后端
+### 手动启动
 ```bash
-# 停止现有进程
-pkill -f "python3 app_main.py"
+# 1. 复制前端静态文件
+mkdir -p /var/www/sftlogapi
+cp -r /root/sft/sftlogapi/frontend/dist/* /var/www/sftlogapi/
 
-# 启动新进程
-cd /root/sft/log-tracker/backend
-nohup python3 app_main.py > /tmp/log-tracker.log 2>&1 &
-```
+# 2. 启动 Flask 后端
+cd /root/sft/sftlogapi/backend
+nohup python3 app_main.py > /var/log/sftlogapi.log 2>&1 &
 
-### 重新构建前端
-```bash
-cd /root/sft/log-tracker/frontend
-npm run build
-cp -r dist/* /var/www/log-tracker/
-```
-
-### 重载 Nginx 配置
-```bash
-/usr/local/tengine/sbin/nginx -t
+# 3. 重启 Tengine（如修改了配置）
 /usr/local/tengine/sbin/nginx -s reload
 ```
 
-## 日志文件
+### 停止服务
+```bash
+# 查找进程
+ps aux | grep "[p]ython3 app_main.py" | grep sftlogapi
 
-- **Flask 日志**: `/tmp/log-tracker.log`
-- **Nginx 访问日志**: `/usr/local/tengine/logs/access.log`
-- **Nginx 错误日志**: `/usr/local/tengine/logs/error.log`
+# 停止进程
+kill <PID>
+```
 
-## 注意事项
+### 查看日志
+```bash
+tail -f /var/log/sftlogapi.log
+```
 
-1. **权限**: 前端文件已复制到 `/var/www/log-tracker/` 以避免 nginx worker 用户 (nobody) 访问 `/root/` 目录的权限问题
-2. **路径配置**: 所有日志路径已更新为绝对路径 `/root/sft/testlogs`
-3. **构建工具**: 已从 Vue CLI 迁移到 Vite，构建速度更快，兼容性更好
-4. **开发模式**: 如需本地开发，可在 frontend 目录运行 `npm run dev`，Vite 开发服务器将运行在 3000 端口并代理 API 请求
+## 📁 配置文件
+
+- **Flask 后端**: `/root/sft/sftlogapi/backend/app_main.py`
+- **前端静态文件**: `/var/www/sftlogapi/`
+- **Tengine 配置**: `/usr/local/tengine/conf/conf.d/sftlogapi.conf`
+- **日志目录配置**: `/root/sft/sftlogapi/config/log_dirs.json`
+- **交易类型配置**: `/root/sft/sftlogapi/config/transaction_types.json`
+
+## 🏗️ 架构说明
+
+```
+用户请求
+    ↓
+Tengine (8090 端口)
+    ↓
+┌─────────────────────────────────────┐
+│ /sftlogapi/      → 静态文件          │
+│ /sftlogapi/api/  → Flask (5001)     │
+│ /sftlogapi/search/ → Flask (5001)   │
+│ /sftlogapi/config/ → Flask (5001)   │
+└─────────────────────────────────────┘
+    ↓
+Flask 后端 (5001 端口)
+    ↓
+日志文件 (/root/sft/testlogs/)
+```
+
+## ✅ 验证步骤
+
+1. 检查 Flask 进程：
+   ```bash
+   ps aux | grep "[p]ython3 app_main.py" | grep sftlogapi
+   ```
+
+2. 检查端口监听：
+   ```bash
+   netstat -tlnp | grep 5001
+   netstat -tlnp | grep 8090
+   ```
+
+3. 测试 API：
+   ```bash
+   curl http://172.16.2.164:8090/sftlogapi/api/services
+   ```
+
+4. 访问前端：
+   ```
+   http://172.16.2.164:8090/sftlogapi/
+   ```
+
+## 📝 与 log-tracker 的区别
+
+| 项目 | log-tracker | sftlogapi |
+|------|-------------|-----------|
+| 部署方式 | Docker 容器 | 本地部署 |
+| Tengine 端口 | 8083 | 8090 |
+| Flask 端口 | 5000 | 5001 |
+| 子路径 | /log-tracker/ | /sftlogapi/ |
+| 项目路径 | /root/sft/log-tracker/ | /root/sft/sftlogapi/ |
+| 前端文件 | /var/www/log-tracker/ | /var/www/sftlogapi/ |
+
+## ⚠️ 注意事项
+
+1. **端口占用**: 确保 5001 和 8090 端口未被其他服务占用
+2. **日志目录**: 确保 `/root/sft/testlogs/` 目录存在且有读取权限
+3. **配置文件**: 修改配置后无需重启，Flask 会实时读取
+4. **前端更新**: 修改前端代码后需要重新构建并复制静态文件

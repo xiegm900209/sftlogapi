@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, make_response
 import os
 import json
 from datetime import datetime
@@ -6,14 +6,28 @@ from config import Config
 from models.log_parser import read_log_blocks, find_logs_by_trace_id
 from models.trace_analyzer import TraceAnalyzer
 from models.indexer import IndexBuilder
+from ai_api.auth import require_api_key, get_api_key_manager
+from ai_api.query_handler import AIQueryHandler
+from ai_api.response_formatter import format_ai_response, format_error_response
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    
+    # 添加 CORS 支持
+    @app.after_request
+    def after_request(response):
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response
 
     # 初始化分析器和索引器
-    analyzer = TraceAnalyzer(config_dir='/root/sft/log-tracker/config', log_dir='/root/sft/testlogs')
+    analyzer = TraceAnalyzer(config_dir='/root/sft/sftlogapi/config', log_dir='/root/sft/testlogs')
     indexer = IndexBuilder(log_dir='/root/sft/testlogs')
+    
+    # 初始化 AI 查询处理器
+    ai_handler = AIQueryHandler(analyzer, '/root/sft/testlogs')
 
     @app.route('/')
     def index():
@@ -651,6 +665,67 @@ def create_app():
                 'message': f'验证失败：{str(e)}'
             }), 500
 
+    # ============================================
+    # AI API 路由
+    # ============================================
+    
+    @app.route('/api/ai/query', methods=['POST'])
+    @require_api_key
+    def ai_query():
+        """AI 统一查询接口"""
+        import time
+        start_time = time.time()
+        
+        try:
+            data = request.get_json()
+            
+            if not data:
+                return jsonify(format_error_response('请求体必须为 JSON 格式', 'INVALID_JSON')), 400
+            
+            query_type = data.get('query_type')
+            params = data.get('params', {})
+            
+            if not query_type:
+                return jsonify(format_error_response('缺少 query_type 参数', 'MISSING_QUERY_TYPE')), 400
+            
+            result = ai_handler.handle_query(query_type, params)
+            result['query_time_ms'] = int((time.time() - start_time) * 1000)
+            
+            api_key_info = {
+                'remaining': getattr(request, 'api_key_remaining', 0),
+                'limit': getattr(request, 'api_key_info', {}).get('rate_limit', 0),
+                'period': getattr(request, 'api_key_info', {}).get('rate_limit_period', 'minute')
+            }
+            
+            return jsonify(format_ai_response(result, api_key_info))
+        
+        except Exception as e:
+            return jsonify(format_error_response(f'查询错误：{str(e)}', 'INTERNAL_ERROR')), 500
+    
+    @app.route('/api/ai/health', methods=['GET'])
+    def ai_health():
+        """AI API 健康检查"""
+        return jsonify({'success': True, 'status': 'healthy', 'timestamp': datetime.utcnow().isoformat() + 'Z', 'api_version': 'v1'})
+    
+    @app.route('/api/ai/transaction-types', methods=['GET'])
+    @require_api_key
+    def ai_get_transaction_types():
+        """获取交易类型列表"""
+        try:
+            return jsonify({'success': True, 'data': analyzer.transaction_types, 'count': len(analyzer.transaction_types), 'timestamp': datetime.utcnow().isoformat() + 'Z'})
+        except Exception as e:
+            return jsonify(format_error_response(f'获取失败：{str(e)}', 'INTERNAL_ERROR')), 500
+    
+    @app.route('/api/ai/services', methods=['GET'])
+    @require_api_key
+    def ai_get_services():
+        """获取服务列表"""
+        try:
+            services = sorted(list(analyzer.log_dirs.keys()))
+            return jsonify({'success': True, 'data': services, 'count': len(services), 'timestamp': datetime.utcnow().isoformat() + 'Z'})
+        except Exception as e:
+            return jsonify(format_error_response(f'获取失败：{str(e)}', 'INTERNAL_ERROR')), 500
+
     return app
 
 def extract_merchant(parsed_content):
@@ -772,4 +847,4 @@ def find_logs_by_trace_id_with_time(service_name, trace_id, log_dir, log_time=No
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)

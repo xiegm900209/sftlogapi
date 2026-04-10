@@ -102,17 +102,6 @@
                 </ul>
                 <el-button type="primary" size="small" @click.stop="$router.push('/app-log-config')">管理日志配置</el-button>
               </el-collapse-item>
-              
-              <el-collapse-item title="系统配置" name="3">
-                <p class="sub-desc">系统级配置管理</p>
-                <ul class="feature-list">
-                  <li>✓ 应用基础配置</li>
-                  <li>✓ 日志级别设置</li>
-                  <li>✓ 搜索参数配置</li>
-                  <li>✓ 性能参数调整</li>
-                </ul>
-                <el-button type="primary" size="small" @click.stop="$router.push('/config')">系统配置</el-button>
-              </el-collapse-item>
             </el-collapse>
           </div>
         </el-card>
@@ -210,7 +199,7 @@
     <!-- 页脚 -->
     <div class="footer-section">
       <div class="footer-content">
-        <p>交易日志链路追踪系统 v2.3.0</p>
+        <p>sftlogapi - 交易日志链路追踪系统 v1.0.0</p>
         <p>帮助开发和运维团队快速定位分布式系统中的交易流转问题</p>
         <div class="footer-links">
           <span>技术栈：</span>
