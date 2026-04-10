@@ -105,6 +105,53 @@
             </el-collapse>
           </div>
         </el-card>
+
+        <!-- 功能 4: AI API 能力 -->
+        <el-card class="feature-card feature-ai" shadow="hover">
+          <div class="feature-header">
+            <div class="feature-icon">🤖</div>
+            <h3 class="feature-title">AI API 能力</h3>
+          </div>
+          <p class="feature-desc">
+            为智多星等 AI 系统提供自然语言查询接口，支持完整日志返回和智能分析。
+          </p>
+          <el-divider></el-divider>
+          <div class="feature-details">
+            <h4>核心能力：</h4>
+            <ul class="feature-list">
+              <li>✓ <strong>自然语言查询</strong> - 支持中文自然语言解析</li>
+              <li>✓ <strong>自动 TraceID 提取</strong> - 从 REQ_SN 自动提取 TraceID</li>
+              <li>✓ <strong>全链路日志</strong> - 返回完整日志（无截断）</li>
+              <li>✓ <strong>多服务追踪</strong> - 自动查询所有关联服务</li>
+              <li>✓ <strong>智能分析</strong> - 交易状态判断、异常检测</li>
+              <li>✓ <strong>知识库集成</strong> - 交易类型、服务描述知识库</li>
+              <li>✓ <strong>API Key 鉴权</strong> - 安全的访问控制</li>
+              <li>✓ <strong>速率限制</strong> - 100 次/分钟（生产环境）</li>
+            </ul>
+            
+            <el-alert
+              title="智多星集成示例"
+              type="info"
+              :closable="false"
+              show-icon
+              class="ai-example"
+            >
+              <div class="example-content">
+                <p><strong>用户输入：</strong></p>
+                <code class="example-code">"帮我看下 310011 交易的日志，REQ_SN=LX...，时间 2026040809"</code>
+                <p style="margin-top: 10px;"><strong>AI 调用：</strong></p>
+                <code class="example-code">POST /api/ai/query</code>
+                <p style="margin-top: 10px;"><strong>返回：</strong></p>
+                <code class="example-code">93 条完整日志 + 智能分析结果</code>
+              </div>
+            </el-alert>
+            
+            <div class="api-links">
+              <el-button size="small" @click.stop="$router.push('/api/ai/health')">健康检查</el-button>
+              <el-tag type="success" size="small" style="margin-left: 10px;">API v1.0</el-tag>
+            </div>
+          </div>
+        </el-card>
       </div>
     </div>
 
@@ -297,6 +344,11 @@ export default {
   border-left: 4px solid #409EFF;
 }
 
+.feature-ai {
+  border-left: 4px solid #67C23A;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+}
+
 .feature-header {
   display: flex;
   align-items: center;
@@ -365,6 +417,34 @@ export default {
 
 .feature-collapse :deep(.el-collapse-item__content) {
   padding: 10px 15px;
+}
+
+/* AI API 卡片样式 */
+.ai-example {
+  margin-top: 15px;
+  background-color: #f4f4f5 !important;
+}
+
+.example-content {
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.example-code {
+  display: block;
+  background-color: #f4f4f5;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #303133;
+  border-left: 3px solid #409EFF;
+}
+
+.api-links {
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
 }
 
 .sub-desc {
