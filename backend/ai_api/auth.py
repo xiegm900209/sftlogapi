@@ -13,8 +13,9 @@ from flask import request, jsonify
 class APIKeyManager:
     """API Key 管理器"""
     
-    def __init__(self, config_path):
-        self.config_path = config_path
+    def __init__(self, config_path=None):
+        # 支持环境变量或默认路径
+        self.config_path = config_path or os.environ.get('CONFIG_PATH', '/app/config/api_keys.json')
         self.api_keys = {}
         self.rate_limits = defaultdict(list)
         self.load_keys()
@@ -115,7 +116,7 @@ def get_api_key_manager():
     """获取全局 API Key 管理器"""
     global _api_key_manager
     if _api_key_manager is None:
-        config_path = '/root/sft/sftlogapi/config/api_keys.json'
+        config_path = os.environ.get('CONFIG_PATH', '/app/config/api_keys.json')
         _api_key_manager = APIKeyManager(config_path)
     return _api_key_manager
 

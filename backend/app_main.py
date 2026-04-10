@@ -23,15 +23,15 @@ def create_app():
         return response
 
     # 初始化分析器和索引器
-    analyzer = TraceAnalyzer(config_dir='/root/sft/sftlogapi/config', log_dir='/root/sft/testlogs')
-    indexer = IndexBuilder(log_dir='/root/sft/testlogs')
+    analyzer = TraceAnalyzer(config_dir='/app/config', log_dir='/app/logs')
+    indexer = IndexBuilder(log_dir='/app/logs')
     
     # 初始化 AI 查询处理器
-    ai_handler = AIQueryHandler(analyzer, '/root/sft/testlogs')
+    ai_handler = AIQueryHandler(analyzer, '/app/logs')
 
     @app.route('/')
     def index():
-        return send_from_directory('/root/sft/log-tracker/frontend/dist', 'index.html')
+        return send_from_directory('/app/static', 'index.html')
 
     @app.route('/api/search', methods=['GET'])
     def search_by_req_sn():
@@ -44,7 +44,7 @@ def create_app():
 
         try:
             from models.log_parser import find_logs_by_req_sn
-            logs = find_logs_by_req_sn(service, req_sn, '/root/sft/testlogs')
+            logs = find_logs_by_req_sn(service, req_sn, '/app/logs')
 
             result = []
             for log in logs:
@@ -112,12 +112,12 @@ def create_app():
 
         try:
             if service:
-                logs = find_logs_by_trace_id(service, trace_id, '/root/sft/testlogs')
+                logs = find_logs_by_trace_id(service, trace_id, '/app/logs')
             else:
                 logs = []
                 log_dirs = analyzer.log_dirs
                 for svc_name in log_dirs.keys():
-                    svc_logs = find_logs_by_trace_id(svc_name, trace_id, '/root/sft/testlogs')
+                    svc_logs = find_logs_by_trace_id(svc_name, trace_id, '/app/logs')
                     logs.extend(svc_logs)
 
             result = []
@@ -152,7 +152,7 @@ def create_app():
             log_dirs = analyzer.log_dirs
             services = list(log_dirs.keys())
 
-            testlogs_path = '/root/sft/testlogs'
+            testlogs_path = '/app/logs'
             if os.path.exists(testlogs_path):
                 for item in os.listdir(testlogs_path):
                     item_path = os.path.join(testlogs_path, item)
@@ -196,7 +196,7 @@ def create_app():
             results = []
 
             if service == 'all':
-                log_dir = '/root/sft/testlogs'
+                log_dir = '/app/logs'
                 services = [d for d in os.listdir(log_dir) if os.path.isdir(os.path.join(log_dir, d))]
             else:
                 services = [service]
@@ -320,9 +320,9 @@ def create_app():
             
             # 确定要查询的文件列表
             if log_time:
-                log_files = find_log_files_by_time(first_app, log_time, '/root/sft/testlogs')
+                log_files = find_log_files_by_time(first_app, log_time, '/app/logs')
             else:
-                service_dir = os.path.join('/root/sft/testlogs', first_app)
+                service_dir = os.path.join('/app/logs', first_app)
                 if os.path.exists(service_dir):
                     log_files = [os.path.join(service_dir, f) for f in os.listdir(service_dir) if f.endswith('.log') or f.endswith('.log.gz')]
                     log_files.sort(reverse=True)
@@ -360,7 +360,7 @@ def create_app():
                 group_total = 0
 
                 for app in apps:
-                    trace_logs = find_logs_by_trace_id_with_time(app, trace_id, '/root/sft/testlogs', log_time)
+                    trace_logs = find_logs_by_trace_id_with_time(app, trace_id, '/app/logs', log_time)
                     
                     logs_for_app = []
                     for log in trace_logs:
@@ -457,14 +457,14 @@ def create_app():
                 
                 # 确定要查询的文件列表
                 if log_time:
-                    log_files = find_log_files_by_time(svc, log_time, '/root/sft/testlogs')
+                    log_files = find_log_files_by_time(svc, log_time, '/app/logs')
                     if not log_files:
                         return jsonify({
                             'success': False,
                             'message': f'未找到时间 {log_time} 的日志文件'
                         })
                 else:
-                    service_dir = os.path.join('/root/sft/testlogs', svc)
+                    service_dir = os.path.join('/app/logs', svc)
                     if os.path.exists(service_dir):
                         log_files = [os.path.join(service_dir, f) for f in os.listdir(service_dir) if f.endswith('.log') or f.endswith('.log.gz')]
                         log_files.sort(reverse=True)
@@ -509,7 +509,7 @@ def create_app():
                 trace_id = trace_info['trace_id']
                 req_sn_logs = trace_info['req_sn_logs']
                 
-                trace_logs = find_logs_by_trace_id_with_time(svc, trace_id, '/root/sft/testlogs', log_time)
+                trace_logs = find_logs_by_trace_id_with_time(svc, trace_id, '/app/logs', log_time)
                 
                 logs_for_this_trace = []
                 for log in trace_logs:
@@ -575,7 +575,7 @@ def create_app():
                     'message': '缺少配置数据'
                 }), 400
 
-            config_path = '/root/sft/log-tracker/config/transaction_types.json'
+            config_path = '/app/config/transaction_types.json'
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -617,7 +617,7 @@ def create_app():
                         'message': '缺少配置数据'
                     }), 400
 
-                config_path = '/root/sft/log-tracker/config/log_dirs.json'
+                config_path = '/app/config/log_dirs.json'
                 with open(config_path, 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
 

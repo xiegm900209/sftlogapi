@@ -9,7 +9,7 @@ from models.log_parser import read_log_blocks
 class IndexBuilder:
     """日志索引构建器"""
 
-    def __init__(self, log_dir: str = '/root/sft/testlogs', index_dir: str = '/root/sft/log-tracker/logs_index'):
+    def __init__(self, log_dir: str = '/app/logs', index_dir: str = '/app/logs_index'):
         self.log_dir = log_dir
         self.index_dir = index_dir
         os.makedirs(index_dir, exist_ok=True)

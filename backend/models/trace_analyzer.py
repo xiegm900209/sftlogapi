@@ -8,7 +8,7 @@ from models.indexer import IndexBuilder
 class TraceAnalyzer:
     """链路追踪分析器"""
 
-    def __init__(self, config_dir: str = '/root/sft/log-tracker/config', log_dir: str = '/root/sft/testlogs'):
+    def __init__(self, config_dir: str = '/app/config', log_dir: str = '/app/logs'):
         self.config_dir = config_dir
         self.log_dir = log_dir
         self.index_builder = IndexBuilder(log_dir=log_dir)
@@ -61,11 +61,11 @@ class TraceAnalyzer:
         else:
             # 默认配置
             return {
-                "sft-aipg": "/root/sft/testlogs/sft-aipg",
-                "sft-trxqry": "/root/sft/testlogs/sft-trxqry",
-                "sft-pay": "/root/sft/testlogs/sft-pay",
-                "sft-batchpay": "/root/sft/testlogs/sft-batchpay",
-                "sft-contract": "/root/sft/testlogs/sft-contract"
+                "sft-aipg": "/app/logs/sft-aipg",
+                "sft-trxqry": "/app/logs/sft-trxqry",
+                "sft-pay": "/app/logs/sft-pay",
+                "sft-batchpay": "/app/logs/sft-batchpay",
+                "sft-contract": "/app/logs/sft-contract"
             }
 
     def trace_transaction_chain(self, req_sn: str, transaction_type: Optional[str] = None) -> Dict:

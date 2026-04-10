@@ -1,0 +1,125 @@
+{
+  "100001": {
+    "apps": [
+      "sft-aipg",
+      "sft-batchapi",
+      "sft-trxbatch",
+      "sft-bttrx-listener",
+      "sft-chnlbatch"
+    ],
+    "name": "代收"
+  },
+  "100002": {
+    "apps": [
+      "sft-aipg",
+      "sft-batchapi",
+      "sft-trxbatch",
+      "sft-bttrx-listener",
+      "sft-chnlbatch"
+    ],
+    "name": "代付"
+  },
+  "100007": {
+    "apps": [
+      "sft-aipg",
+      "sft-merapi",
+      "sft-trxcharge",
+      "sft-chnlagent",
+      "sft-ucpagent",
+      "sft-rtresult-http",
+      "sft-rtresult-listener"
+    ],
+    "name": "实时转账"
+  },
+  "100011": {
+    "apps": [
+      "sft-aipg",
+      "sft-merapi",
+      "sft-trxcharge",
+      "sft-chnlagent",
+      "sft-ucpagent",
+      "sft-rtresult-http",
+      "sft-rtresult-listener"
+    ],
+    "name": "实时收款"
+  },
+  "100014": {
+    "apps": [
+      "sft-aipg",
+      "sft-merapi",
+      "sft-trxpay",
+      "sft-chnlagent",
+      "sft-ucpagent",
+      "sft-rtresult-http",
+      "sft-rtresult-listener"
+    ],
+    "name": "实时付款"
+  },
+  "100024": {
+    "apps": [
+      "sft-aipg",
+      "sft-merapi",
+      "sft-trxcharge",
+      "sft-chnlagent",
+      "sft-ucpagent",
+      "sft-rtresult-http",
+      "sft-rtresult-listener"
+    ],
+    "name": "直清还款"
+  },
+  "100071": {
+    "apps": [
+      "sft-aipg",
+      "sft-merapi",
+      "sft-trxpay",
+      "sft-chnlagent",
+      "sft-ucpagent",
+      "sft-btresult-http",
+      "sft-bttrx-listener"
+    ],
+    "name": "联合收款"
+  },
+  "200004": {
+    "apps": [
+      "sft-aipg",
+      "sft-trxqry"
+    ],
+    "name": "交易查询"
+  },
+  "310001": {
+    "apps": [
+      "sft-aipg",
+      "sft-agrsign"
+    ],
+    "name": "协议签约申请"
+  },
+  "310002": {
+    "apps": [
+      "sft-aipg",
+      "sft-agrsign"
+    ],
+    "name": "协议签约确认"
+  },
+  "310011": {
+    "apps": [
+      "sft-aipg",
+      "sft-merapi",
+      "sft-trxcharge",
+      "sft-chnlagent",
+      "sft-ucpagent",
+      "sft-rtresult-http",
+      "sft-rtresult-listener"
+    ],
+    "name": "协议支付"
+  },
+  "310016": {
+    "apps": [
+      "sft-aipg",
+      "sft-batchapi",
+      "sft-trxbatch",
+      "sft-bttrx-listener",
+      "sft-chnlbatch"
+    ],
+    "name": "批量协议支付"
+  }
+}

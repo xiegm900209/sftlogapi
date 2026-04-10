@@ -217,7 +217,7 @@ def parse_log_block(block_text: str) -> Optional[LogBlock]:
     return LogBlock(timestamp, thread, trace_id, level, env, company, service, content)
 
 
-def find_logs_by_req_sn(service_name: str, req_sn: str, log_dir: str = '/root/sft/testlogs') -> List[LogBlock]:
+def find_logs_by_req_sn(service_name: str, req_sn: str, log_dir: str = '/app/logs') -> List[LogBlock]:
     """
     根据 REQ_SN 在指定服务的日志中查找对应的日志块
     """
@@ -238,7 +238,7 @@ def find_logs_by_req_sn(service_name: str, req_sn: str, log_dir: str = '/root/sf
     return result
 
 
-def find_logs_by_trace_id(service_name: str, trace_id: str, log_dir: str = '/root/sft/testlogs') -> List[LogBlock]:
+def find_logs_by_trace_id(service_name: str, trace_id: str, log_dir: str = '/app/logs') -> List[LogBlock]:
     """
     根据 TraceID 在指定服务的日志中查找对应的日志块
     """
