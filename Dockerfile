@@ -1,29 +1,12 @@
-# sftlogapi - Docker 镜像
+# sftlogapi - 纯 Flask 应用镜像
 # 版本：v1.0.0
-# 基于 Python 3.9 + Nginx
+# 基于 Python 3.9
 
-# ============================================
-# 阶段 1: 构建前端
-# ============================================
-FROM node:18-alpine AS frontend-builder
-
-WORKDIR /app/frontend
-
-# 复制前端源码
-COPY frontend/package*.json ./
-RUN npm install
-
-COPY frontend/ ./
-RUN npm run build
-
-# ============================================
-# 阶段 2: 生产环境
-# ============================================
 FROM python:3.9-slim
 
 LABEL maintainer="xiegm900209"
 LABEL version="1.0.0"
-LABEL description="sftlogapi - 交易日志链路追踪系统（智多星 AI 集成）"
+LABEL description="sftlogapi - 交易日志链路追踪系统（纯 Flask 应用）"
 
 # 设置环境变量
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -31,14 +14,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     FLASK_ENV=production \
     FLASK_APP=app_main.py
 
-# 安装 Nginx 和 curl（健康检查用）
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    nginx \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
 # 创建工作目录
 WORKDIR /app
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # 安装 Python 依赖
 COPY requirements.txt ./
@@ -47,30 +29,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制后端代码
 COPY backend/ ./backend/
 
-# 复制配置文件目录
+# 复制配置文件
 COPY config/ ./config/
 
-# 从构建阶段复制前端构建产物
-COPY --from=frontend-builder /app/frontend/dist /var/www/sftlogapi
-
-# 复制 Nginx 配置
-COPY nginx-docker.conf /etc/nginx/conf.d/default.conf
-
-# 创建日志目录并删除默认配置
-RUN mkdir -p /var/log/nginx \
-    && mkdir -p /app/logs \
-    && rm -f /etc/nginx/sites-enabled/default
+# 创建日志目录
+RUN mkdir -p /app/logs
 
 # 暴露端口
-EXPOSE 80
+EXPOSE 5000
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost/api/ai/health || exit 1
-
-# 启动脚本
-COPY docker-entrypoint.sh /
-RUN chmod +x /docker-entrypoint.sh
+    CMD curl -f http://localhost:5000/api/ai/health || exit 1
 
 # 启动命令
-CMD ["/docker-entrypoint.sh"]
+CMD ["python3", "backend/app_main.py"]
