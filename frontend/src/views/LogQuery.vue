@@ -41,24 +41,25 @@
         </el-form-item>
 
         <el-form-item label="服务">
-          <el-select 
-            v-model="queryForm.service" 
-            placeholder="选择服务"
-            clearable
-            style="width: 200px"
-          >
-            <el-option
-              v-for="service in services"
-              :key="service"
-              :label="service"
-              :value="service"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-
-        <el-form-item>
-          <el-button type="primary" @click="searchLogs" :loading="loading">查询</el-button>
-          <el-button @click="resetForm">重置</el-button>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <el-select 
+              v-model="queryForm.service" 
+              placeholder="选择服务"
+              clearable
+              style="width: 200px"
+            >
+              <el-option
+                v-for="service in services"
+                :key="service"
+                :label="service"
+                :value="service"
+              ></el-option>
+            </el-select>
+            <div style="display: flex; gap: 8px;">
+              <el-button type="primary" @click="searchLogs" :loading="loading" size="small">查询</el-button>
+              <el-button @click="resetForm" size="small">重置</el-button>
+            </div>
+          </div>
         </el-form-item>
       </el-form>
 
