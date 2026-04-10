@@ -1,18 +1,128 @@
 {
-  "310011": {
-    "name": "协议支付",
-    "apps": ["sft-aipg", "sft-trxqry", "sft-pay"]
-  },
-  "310016": {
-    "name": "批量协议支付",
-    "apps": ["sft-aipg", "sft-trxqry", "sft-batchpay"]
-  },
-  "310002": {
-    "name": "协议支付签约",
-    "apps": ["sft-aipg", "sft-contract"]
-  },
-  "200004": {
-    "name": "交易查询",
-    "apps": ["sft-aipg", "sft-trxqry"]
+  "success": true,
+  "transaction_types": {
+    "100001": {
+      "apps": [
+        "sft-aipg",
+        "sft-batchapi",
+        "sft-trxbatch",
+        "sft-bttrx-listener",
+        "sft-chnlbatch"
+      ],
+      "name": "\u4ee3\u6536"
+    },
+    "100002": {
+      "apps": [
+        "sft-aipg",
+        "sft-batchapi",
+        "sft-trxbatch",
+        "sft-bttrx-listener",
+        "sft-chnlbatch"
+      ],
+      "name": "\u4ee3\u4ed8"
+    },
+    "100007": {
+      "apps": [
+        "sft-aipg",
+        "sft-merapi",
+        "sft-trxcharge",
+        "sft-chnlagent",
+        "sft-ucpagent",
+        "sft-rtresult-http",
+        "sft-rtresult-listener"
+      ],
+      "name": "\u5b9e\u65f6\u8f6c\u8d26"
+    },
+    "100011": {
+      "apps": [
+        "sft-aipg",
+        "sft-merapi",
+        "sft-trxcharge",
+        "sft-chnlagent",
+        "sft-ucpagent",
+        "sft-rtresult-http",
+        "sft-rtresult-listener"
+      ],
+      "name": "\u5b9e\u65f6\u6536\u6b3e"
+    },
+    "100014": {
+      "apps": [
+        "sft-aipg",
+        "sft-merapi",
+        "sft-trxpay",
+        "sft-chnlagent",
+        "sft-ucpagent",
+        "sft-rtresult-http",
+        "sft-rtresult-listener"
+      ],
+      "name": "\u5b9e\u65f6\u4ed8\u6b3e"
+    },
+    "100024": {
+      "apps": [
+        "sft-aipg",
+        "sft-merapi",
+        "sft-trxcharge",
+        "sft-chnlagent",
+        "sft-ucpagent",
+        "sft-rtresult-http",
+        "sft-rtresult-listener"
+      ],
+      "name": "\u76f4\u6e05\u8fd8\u6b3e"
+    },
+    "100071": {
+      "apps": [
+        "sft-aipg",
+        "sft-merapi",
+        "sft-trxpay",
+        "sft-chnlagent",
+        "sft-ucpagent",
+        "sft-btresult-http",
+        "sft-bttrx-listener"
+      ],
+      "name": "\u8054\u5408\u6536\u6b3e"
+    },
+    "200004": {
+      "apps": [
+        "sft-aipg",
+        "sft-trxqry"
+      ],
+      "name": "\u4ea4\u6613\u67e5\u8be2"
+    },
+    "310001": {
+      "apps": [
+        "sft-aipg",
+        "sft-agrsign"
+      ],
+      "name": "\u534f\u8bae\u7b7e\u7ea6\u7533\u8bf7"
+    },
+    "310002": {
+      "apps": [
+        "sft-aipg",
+        "sft-agrsign"
+      ],
+      "name": "\u534f\u8bae\u7b7e\u7ea6\u786e\u8ba4"
+    },
+    "310011": {
+      "apps": [
+        "sft-aipg",
+        "sft-merapi",
+        "sft-trxcharge",
+        "sft-chnlagent",
+        "sft-ucpagent",
+        "sft-rtresult-http",
+        "sft-rtresult-listener"
+      ],
+      "name": "\u534f\u8bae\u652f\u4ed8"
+    },
+    "310016": {
+      "apps": [
+        "sft-aipg",
+        "sft-batchapi",
+        "sft-trxbatch",
+        "sft-bttrx-listener",
+        "sft-chnlbatch"
+      ],
+      "name": "\u6279\u91cf\u534f\u8bae\u652f\u4ed8"
+    }
   }
 }
