@@ -9,30 +9,22 @@ echo "🚀 启动 sftlogapi..."
 # 启动 Flask 后端
 echo "📦 启动 Flask 后端..."
 cd /app/backend
-python3 app_main.py &
-FLASK_PID=$!
+nohup python3 app_main.py > /var/log/flask.log 2>&1 &
+sleep 5
 
-# 等待 Flask 启动
-sleep 3
-
-# 检查 Flask 是否启动成功
-if ! ps -p $FLASK_PID > /dev/null; then
+# 检查 Flask 是否启动
+if curl -s http://127.0.0.1:5000/api/ai/health > /dev/null; then
+    echo "✅ Flask 后端已启动"
+else
     echo "❌ Flask 启动失败"
+    cat /var/log/flask.log
     exit 1
 fi
-echo "✅ Flask 后端已启动 (PID: $FLASK_PID)"
 
 # 启动 Nginx
 echo "🌐 启动 Nginx..."
 nginx -g "daemon off;" &
-NGINX_PID=$!
-
-# 检查 Nginx 是否启动成功
-if ! ps -p $NGINX_PID > /dev/null; then
-    echo "❌ Nginx 启动失败"
-    exit 1
-fi
-echo "✅ Nginx 已启动 (PID: $NGINX_PID)"
+echo "✅ Nginx 已启动"
 
 echo "✅ sftlogapi 已就绪"
 echo "🌐 访问地址：http://localhost/sftlogapi/"

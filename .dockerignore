@@ -6,8 +6,6 @@
 Dockerfile
 docker-compose.yml
 .dockerignore
-docker-entrypoint.sh
-nginx-docker.conf
 
 # 镜像文件
 *.tar
