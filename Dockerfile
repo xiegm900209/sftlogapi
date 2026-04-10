@@ -47,12 +47,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制后端代码
 COPY backend/ ./backend/
 
-# 修复后端代码中的路径（改为容器内路径）
-RUN sed -i "s|/root/sft/log-tracker/config|/app/config|g" /app/backend/app_main.py && \
-    sed -i "s|/root/sft/testlogs|/app/logs|g" /app/backend/app_main.py
-
-# 复制配置文件目录
+# 复制配置文件目录（在 sed 之前）
 COPY config/ ./config/
+
+# 修复后端代码和配置文件中的路径（改为容器内路径）
+RUN sed -i "s|/root/sft/log-tracker/config|/app/config|g" /app/backend/app_main.py && \
+    sed -i "s|/root/sft/testlogs|/app/logs|g" /app/backend/app_main.py && \
+    sed -i "s|/root/sft/testlogs|/app/logs|g" /app/config/log_dirs.json
 
 # 从构建阶段复制前端构建产物
 COPY --from=frontend-builder /app/frontend/dist /var/www/log-tracker

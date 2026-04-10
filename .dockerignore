@@ -26,9 +26,8 @@ backend/__pycache__
 backend/*.pyc
 backend/.env*
 
-# 配置
-config/*.json
-!config/.gitkeep
+# 配置（sample 文件不打包，使用最新配置）
+# config/*.json - 需要打包到镜像中
 
 # IDE
 .vscode
